@@ -67,9 +67,13 @@ import { StyledEngineProvider } from '@mui/material/styles';
 import { useServiceWorker } from '../hooks/use-service-worker';
 import NeedRefreshDialog from './NeedRefreshDialog';
 
-const latestExtensionVersion = '1.11.0';
+const latestExtensionVersion = '1.12.0';
 const extensionUrl =
     'https://chromewebstore.google.com/detail/asbplayer-language-learni/hkledmpjpaehamkiehglnbelcpdflcab';
+
+const INPUT_ACCEPT_FILE_EXTENSIONS =
+    '.srt,.ass,.vtt,.sup,.mp3,.m4a,.aac,.flac,.ogg,.wav,.opus,.mkv,.mp4,.avi,.m4v,.webm';
+
 const useContentStyles = makeStyles<Theme, ContentProps>((theme) => ({
     content: {
         flexGrow: 1,
@@ -238,9 +242,15 @@ function App({
             regexFilter: settings.subtitleRegexFilter,
             regexFilterTextReplacement: settings.subtitleRegexFilterTextReplacement,
             subtitleHtml: settings.subtitleHtml,
+            convertNetflixRuby: settings.convertNetflixRuby,
             pgsParserWorkerFactory: async () => new pgsParserWorkerFactory(),
         });
-    }, [settings.subtitleRegexFilter, settings.subtitleRegexFilterTextReplacement, settings.subtitleHtml]);
+    }, [
+        settings.subtitleRegexFilter,
+        settings.subtitleRegexFilterTextReplacement,
+        settings.subtitleHtml,
+        settings.convertNetflixRuby,
+    ]);
     const webSocketClient = useAppWebSocketClient({ settings });
     const [subtitles, setSubtitles] = useState<DisplaySubtitleModel[]>([]);
     const playbackPreferences = usePlaybackPreferences(settings, extension);
@@ -1359,7 +1369,7 @@ function App({
                                 ref={fileInputRef}
                                 onChange={handleFileInputChange}
                                 type="file"
-                                accept=".srt,.ass,.vtt,.sup,.mp3,.m4a,.aac,.flac,.ogg,.wav,.opus,.mkv,.mp4,.avi,.m4v"
+                                accept={INPUT_ACCEPT_FILE_EXTENSIONS}
                                 multiple
                                 hidden
                             />

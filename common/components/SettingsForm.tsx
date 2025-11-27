@@ -21,6 +21,7 @@ import MenuItem from '@mui/material/MenuItem';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Radio from '@mui/material/Radio';
+import Checkbox from '@mui/material/Checkbox';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -601,6 +602,7 @@ function KeyBindField({ label, keys, boundViaChrome, onKeysChange, onOpenExtensi
                     disabled={boundViaChrome}
                     helperText={boundViaChrome ? t('settings.extensionShortcut') : undefined}
                     value={currentKeyString}
+                    title={currentKeyString}
                     color="primary"
                     slotProps={{
                         input: {
@@ -924,6 +926,7 @@ export default function SettingsForm({
         tabName,
         subtitleRegexFilter,
         subtitleRegexFilterTextReplacement,
+        convertNetflixRuby,
         subtitleHtml,
         language,
         customAnkiFields,
@@ -2796,8 +2799,9 @@ export default function SettingsForm({
                                 <TableContainer variant="outlined" component={Paper} style={{ height: 'auto' }}>
                                     <Table>
                                         <TableBody>
-                                            {Object.entries(pageMetadata).map(([key, metadata]) => {
+                                            {Object.keys(pageConfigs).map((key) => {
                                                 const pageKey = key as keyof PageSettings;
+                                                const metadata = pageMetadata[pageKey];
                                                 const page = settings.streamingPages[pageKey];
 
                                                 return (
@@ -2987,6 +2991,17 @@ export default function SettingsForm({
                                     />
                                 </RadioGroup>
                             </FormControl>
+                            <LabelWithHoverEffect
+                                control={
+                                    <Checkbox
+                                        checked={convertNetflixRuby}
+                                        onChange={(event) =>
+                                            handleSettingChanged('convertNetflixRuby', event.target.checked)
+                                        }
+                                    />
+                                }
+                                label={t('settings.convertNetflixRuby')}
+                            />
                         </FormGroup>
                     </Grid>
                     {(!extensionInstalled || extensionSupportsPauseOnHover) && (
@@ -3035,49 +3050,43 @@ export default function SettingsForm({
                             </RadioGroup>
                         </Grid>
                     )}
-                    {!isFirefox && (
-                        <>
-                            <Grid item>
-                                <LabelWithHoverEffect
-                                    className={classes.switchLabel}
-                                    control={
-                                        <Switch
-                                            checked={webSocketClientEnabled}
-                                            onChange={(e) =>
-                                                handleSettingChanged('webSocketClientEnabled', e.target.checked)
-                                            }
-                                        />
-                                    }
-                                    label={t('settings.webSocketClientEnabled')}
-                                    labelPlacement="start"
+                    <Grid item>
+                        <LabelWithHoverEffect
+                            className={classes.switchLabel}
+                            control={
+                                <Switch
+                                    checked={webSocketClientEnabled}
+                                    onChange={(e) => handleSettingChanged('webSocketClientEnabled', e.target.checked)}
                                 />
-                            </Grid>
-                            <Grid item>
-                                <TextField
-                                    className={classes.textField}
-                                    color="primary"
-                                    fullWidth
-                                    label={t('settings.webSocketServerUrl')}
-                                    value={webSocketServerUrl}
-                                    disabled={!webSocketClientEnabled}
-                                    onChange={(e) => handleSettingChanged('webSocketServerUrl', e.target.value)}
-                                    error={webSocketClientEnabled && webSocketConnectionSucceeded === false}
-                                    helperText={webSocketServerUrlHelperText}
-                                    slotProps={{
-                                        input: {
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <IconButton onClick={pingWebSocketServer}>
-                                                        <RefreshIcon />
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            ),
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                        </>
-                    )}
+                            }
+                            label={t('settings.webSocketClientEnabled')}
+                            labelPlacement="start"
+                        />
+                    </Grid>
+                    <Grid item>
+                        <TextField
+                            className={classes.textField}
+                            color="primary"
+                            fullWidth
+                            label={t('settings.webSocketServerUrl')}
+                            value={webSocketServerUrl}
+                            disabled={!webSocketClientEnabled}
+                            onChange={(e) => handleSettingChanged('webSocketServerUrl', e.target.value)}
+                            error={webSocketClientEnabled && webSocketConnectionSucceeded === false}
+                            helperText={webSocketServerUrlHelperText}
+                            slotProps={{
+                                input: {
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={pingWebSocketServer}>
+                                                <RefreshIcon />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                        />
+                    </Grid>
                     <Grid item>
                         <Button
                             variant="contained"
