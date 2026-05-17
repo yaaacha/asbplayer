@@ -3,6 +3,11 @@ import {
     AsbPlayerToVideoCommandV2,
     AsbplayerInstance,
     CardModel,
+    DictionaryRequestStatisticsGenerationMessage,
+    DictionaryRequestStatisticsSnapshotMessage,
+    DictionaryRequestStatisticsMineSentencesMessage,
+    DictionaryRequestStatisticsSeekMessage,
+    DictionaryStatisticsMessage,
     ExtensionToAsbPlayerCommand,
     ExtensionToAsbPlayerCommandTabsCommand,
     GetSettingsMessage,
@@ -30,19 +35,29 @@ import {
     SetGlobalStateMessage,
     GetGlobalStateMessage,
     DictionaryBuildAnkiCacheMessage,
+    DictionaryBuildWaniKaniCacheMessage,
+    DictionaryGetAllTokensMessage,
+    DictionaryGetRecordsMessage,
     DictionaryGetBulkMessage,
     DictionaryGetByLemmaBulkMessage,
     DictionarySaveRecordLocalBulkMessage,
     DictionaryDeleteRecordLocalBulkMessage,
+    DictionaryDeleteRecordsMessage,
     DictionaryDeleteProfileMessage,
     DictionaryExportRecordLocalBulkMessage,
     DictionaryImportRecordLocalBulkMessage,
+    DictionaryUpdateRecordsMessage,
     CardUpdatedDialogMessage,
     CardExportedDialogMessage,
     SaveTokenLocalFromAppMessage,
+    SidePanelLocation,
+    AckTabsMessage,
+    BrowserFeatures,
 } from '@project/common';
+import { DictionaryStatisticsSnapshot } from '@project/common/dictionary-statistics';
 import {
     DictionaryLocalTokenInput,
+    DictionaryTokenKey,
     DictionaryTokenRecord,
     DictionaryExportRecordLocalResult,
     DictionaryImportRecordLocalResult,
@@ -51,6 +66,10 @@ import {
     TokenResults,
     DictionaryDeleteRecordLocalResult,
     DictionaryDeleteProfileResult,
+    DictionaryRecordDeleteResult,
+    DictionaryRecordUpdateInput,
+    DictionaryRecordUpdateResult,
+    DictionaryRecordsResult,
 } from '@project/common/dictionary-db';
 import {
     ApplyStrategy,
@@ -80,11 +99,13 @@ export default class ChromeExtension {
     readonly version: string;
     readonly extensionCommands: { [key: string]: string | undefined };
     readonly pageConfig?: { [K in keyof PageSettings]: SettingsFormPageConfig };
+    readonly browserFeatures?: BrowserFeatures;
 
     tabs: VideoTabModel[] | undefined;
     asbplayers: AsbplayerInstance[] | undefined;
     installed: boolean;
     sidePanel: boolean;
+    sidePanelAppRequestedLocation?: SidePanelLocation;
     videoPlayer: boolean | undefined;
     syncedVideoElement: VideoTabModel | undefined;
     loadedSubtitles: boolean = false;
@@ -98,7 +119,8 @@ export default class ChromeExtension {
     constructor(
         version?: string,
         extensionCommands?: { [key: string]: string | undefined },
-        pageConfig?: { [K in keyof PageSettings]: SettingsFormPageConfig }
+        pageConfig?: { [K in keyof PageSettings]: SettingsFormPageConfig },
+        browserFeatures?: BrowserFeatures
     ) {
         this.onMessageCallbacks = [];
         this.onTabsCallbacks = [];
@@ -106,6 +128,7 @@ export default class ChromeExtension {
         this.version = version ?? '';
         this.extensionCommands = extensionCommands ?? {};
         this.pageConfig = pageConfig;
+        this.browserFeatures = browserFeatures;
         this.sidePanel = false;
         this.windowEventListener = (event: MessageEvent) => {
             if (event.source !== window) {
@@ -139,14 +162,19 @@ export default class ChromeExtension {
                 }
 
                 if (tabsCommand.message.ackRequested) {
+                    let ackTabsMessage: AckTabsMessage = {
+                        command: 'ackTabs',
+                        id: id,
+                        receivedTabs: this.tabs,
+                        sidePanel: this.sidePanel,
+                        sidePanelAppRequestedLocation: this.sidePanelAppRequestedLocation,
+                        loadedSubtitles: this.loadedSubtitles,
+                        syncedVideoElement: this.syncedVideoElement,
+                        videoPlayer: this.videoPlayer ?? false,
+                    };
                     window.postMessage({
                         sender: 'asbplayerv2',
-                        message: {
-                            command: 'ackTabs',
-                            id: id,
-                            receivedTabs: this.tabs,
-                            sidePanel: this.sidePanel,
-                        },
+                        message: ackTabsMessage,
                     });
                 }
             } else {
@@ -164,8 +192,36 @@ export default class ChromeExtension {
         window.addEventListener('message', this.windowEventListener);
     }
 
+    get supportsDictionaryWaniKani() {
+        return this.installed && gte(this.version, '1.18.0');
+    }
+
+    get supportsAutoCopyableTrackSetting() {
+        return this.installed && gte(this.version, '1.17.0');
+    }
+
+    get supportsSeekableTrackSetting() {
+        return this.installed && gte(this.version, '1.17.0');
+    }
+
+    get supportsDictionaryBrowser() {
+        return this.installed && gte(this.version, '1.17.0');
+    }
+
+    get supportsDictionaryStatistics() {
+        return this.installed && gte(this.version, '1.16.0');
+    }
+
+    get supportsDictionaryYomitanMecab() {
+        return this.installed && gte(this.version, '1.15.0');
+    }
+
+    get supportsDictionaryTokenStatusDisplayAlpha() {
+        return this.installed && gte(this.version, '1.15.0');
+    }
+
     get supportsDictionary() {
-        return this.installed && gte(this.version, '1.13.0'); // TODO: set correct version
+        return this.installed && gte(this.version, '1.14.0');
     }
 
     get supportsPageSettings() {
@@ -217,7 +273,12 @@ export default class ChromeExtension {
     }
 
     get supportsSidePanel() {
-        return this.installed && !isFirefox && !isMobile && gte(this.version, '1.0.0');
+        return (
+            this.installed &&
+            (this.browserFeatures?.sidePanel ?? false) &&
+            ((!isFirefox && !isMobile && gte(this.version, '1.0.0')) ||
+                (isFirefox && !isMobile && gte(this.version, '1.14.0')))
+        );
     }
 
     get supportsAppIntegration() {
@@ -238,6 +299,10 @@ export default class ChromeExtension {
 
     get supportsOffsetMessage() {
         return this.installed && gte(this.version, '0.23.0');
+    }
+
+    get id() {
+        return id;
     }
 
     startHeartbeat() {
@@ -278,6 +343,7 @@ export default class ChromeExtension {
             receivedTabs: fromVideoPlayer ? [] : this.tabs,
             videoPlayer: fromVideoPlayer,
             sidePanel: this.sidePanel,
+            sidePanelAppRequestedLocation: this.sidePanelAppRequestedLocation,
             loadedSubtitles,
             syncedVideoElement,
         };
@@ -331,11 +397,12 @@ export default class ChromeExtension {
         window.postMessage(command);
     }
 
-    toggleSidePanel() {
+    toggleSidePanel(location?: SidePanelLocation) {
         const command: AsbPlayerCommand<ToggleSidePanelMessage> = {
             sender: 'asbplayerv2',
             message: {
                 command: 'toggle-side-panel',
+                location,
             },
         };
         window.postMessage(command);
@@ -619,6 +686,21 @@ export default class ChromeExtension {
         return await this._createResponsePromise(messageId);
     }
 
+    async dictionaryGetAllTokens(profile: string | undefined, track: number): Promise<TokenResults> {
+        const messageId = uuidv4();
+        const command: AsbPlayerCommand<DictionaryGetAllTokensMessage> = {
+            sender: 'asbplayerv2',
+            message: {
+                command: 'dictionary-get-all-tokens',
+                profile,
+                track,
+                messageId,
+            },
+        };
+        window.postMessage(command);
+        return await this._createResponsePromise(messageId);
+    }
+
     async dictionaryGetByLemmaBulk(
         profile: string | undefined,
         track: number,
@@ -722,14 +804,133 @@ export default class ChromeExtension {
         return await this._createResponsePromise(messageId);
     }
 
-    buildAnkiCache(profile: string | undefined, settings: AsbplayerSettings): Promise<void> {
+    async dictionaryGetRecords(
+        profile: string | undefined,
+        track: number | undefined
+    ): Promise<DictionaryRecordsResult> {
+        const messageId = uuidv4();
+        const command: AsbPlayerCommand<DictionaryGetRecordsMessage> = {
+            sender: 'asbplayerv2',
+            message: {
+                command: 'dictionary-get-records',
+                profile,
+                track,
+                messageId,
+            },
+        };
+        window.postMessage(command);
+        return await this._createResponsePromise(messageId, 60000); // Usually a few seconds
+    }
+
+    async dictionaryUpdateRecords(
+        profile: string | undefined,
+        updates: DictionaryRecordUpdateInput[],
+        applyStates: ApplyStrategy
+    ): Promise<DictionaryRecordUpdateResult> {
+        const messageId = uuidv4();
+        const command: AsbPlayerCommand<DictionaryUpdateRecordsMessage> = {
+            sender: 'asbplayerv2',
+            message: {
+                command: 'dictionary-update-records',
+                profile,
+                updates,
+                applyStates,
+                messageId,
+            },
+        };
+        window.postMessage(command);
+        return await this._createResponsePromise(messageId, 60000); // Usually a few seconds
+    }
+
+    async dictionaryDeleteRecords(
+        profile: string | undefined,
+        tokenKeys: DictionaryTokenKey[]
+    ): Promise<DictionaryRecordDeleteResult> {
+        const messageId = uuidv4();
+        const command: AsbPlayerCommand<DictionaryDeleteRecordsMessage> = {
+            sender: 'asbplayerv2',
+            message: {
+                command: 'dictionary-delete-records',
+                profile,
+                tokenKeys,
+                messageId,
+            },
+        };
+        window.postMessage(command);
+        return await this._createResponsePromise(messageId, 60000); // Usually a few seconds
+    }
+
+    buildAnkiCache(profile: string | undefined, settings?: AsbplayerSettings): Promise<void> {
         const messageId = uuidv4();
         const command: AsbPlayerCommand<DictionaryBuildAnkiCacheMessage> = {
             sender: 'asbplayerv2',
-            message: { command: 'dictionary-build-anki-cache', messageId, profile, settings },
+            message: {
+                command: 'dictionary-build-anki-cache',
+                messageId,
+                profile,
+                ...(this.supportsDictionaryWaniKani ? {} : { settings }),
+            },
         };
         window.postMessage(command);
-        return this._createResponsePromise(messageId, 60000); // Usually <10s
+        return this._createResponsePromise(messageId, 300000); // Usually <10s
+    }
+
+    buildWaniKaniCache(profile: string | undefined): Promise<void> {
+        const messageId = uuidv4();
+        const command: AsbPlayerCommand<DictionaryBuildWaniKaniCacheMessage> = {
+            sender: 'asbplayerv2',
+            message: {
+                command: 'dictionary-build-wanikani-cache',
+                messageId,
+                profile,
+            },
+        };
+        window.postMessage(command);
+        return this._createResponsePromise(messageId, 300000); // Usually <10s
+    }
+
+    publishStatisticsSnapshot(mediaId: string, snapshot?: DictionaryStatisticsSnapshot) {
+        const command: AsbPlayerCommand<DictionaryStatisticsMessage> = {
+            sender: 'asbplayerv2',
+            message: { command: 'dictionary-statistics', mediaId, snapshot },
+        };
+        window.postMessage(command);
+    }
+
+    requestStatisticsSnapshot(mediaId?: string) {
+        const command: AsbPlayerCommand<DictionaryRequestStatisticsSnapshotMessage> = {
+            sender: 'asbplayerv2',
+            message: { command: 'dictionary-request-statistics-snapshot', mediaId },
+        };
+        window.postMessage(command);
+    }
+
+    requestStatisticsGeneration(mediaId?: string) {
+        const command: AsbPlayerCommand<DictionaryRequestStatisticsGenerationMessage> = {
+            sender: 'asbplayerv2',
+            message: { command: 'dictionary-request-statistics-generation', mediaId },
+        };
+        window.postMessage(command);
+    }
+
+    requestStatisticsSeek(mediaId: string, timestamp: number) {
+        const command: AsbPlayerCommand<DictionaryRequestStatisticsSeekMessage> = {
+            sender: 'asbplayerv2',
+            message: {
+                command: 'dictionary-request-statistics-seek',
+                mediaId,
+                timestamp,
+            },
+        };
+        window.postMessage(command);
+    }
+
+    requestStatisticsMineSentences(mediaId: string, indexes: number[]) {
+        const command: AsbPlayerCommand<DictionaryRequestStatisticsMineSentencesMessage> = {
+            sender: 'asbplayerv2',
+            message: { command: 'dictionary-request-statistics-mine-sentences', mediaId, indexes },
+        };
+        window.postMessage(command);
     }
 
     private _createResponsePromise<T>(messageId: string, timeout = 5000) {

@@ -1,4 +1,6 @@
-import type { AnkiSettings } from '../settings/settings';
+import type { AnkiSettings, TokenState, TokenStatus } from '../settings/settings';
+import type { OnlineSubtitleSourceConfig } from '../global-state';
+import type { TokenStatusInfo } from '../dictionary-db';
 
 type Profile = { name: string };
 
@@ -20,6 +22,27 @@ export interface SubtitleTextImage {
     readonly image: DimensionsModel;
 }
 
+export interface TokenReading {
+    pos: [number, number]; // Start/end relative position inside parent token
+    reading: string;
+}
+
+export interface Token {
+    pos: [number, number]; // Start/end relative position inside parent text
+    states: TokenState[];
+    status?: TokenStatus | null; // null means "error"
+    readings: TokenReading[];
+    frequency?: number | null; // null means no frequency data
+    groupingKey?: string; // Stable key for equivalence aggregation
+    lemmasGroupingKey?: string; // Stable key for equivalence aggregation based on lemmas (statistics)
+    externalCandidateStatuses?: TokenStatusInfo[];
+}
+
+export interface Tokenization {
+    tokens: Token[];
+    error?: boolean;
+}
+
 export interface SubtitleModel {
     readonly text: string;
     readonly textImage?: SubtitleTextImage;
@@ -29,6 +52,7 @@ export interface SubtitleModel {
     readonly originalEnd: number;
     readonly track: number;
     readonly index?: number;
+    readonly tokenization?: Tokenization;
     readonly richText?: string;
 }
 
@@ -38,6 +62,11 @@ export interface IndexedSubtitleModel extends SubtitleModel {
 
 export interface RichSubtitleModel extends IndexedSubtitleModel {
     richText?: string;
+}
+
+export interface TokenizedSubtitleModel extends RichSubtitleModel {
+    originalText?: string;
+    tokenization?: Tokenization;
 }
 
 export interface CardTextFieldValues {
@@ -71,16 +100,20 @@ export interface CopyHistoryItem extends CardModel {
     readonly timestamp: number;
 }
 
-export enum ImageErrorCode {
+export enum MediaFragmentErrorCode {
     captureFailed = 1,
     fileLinkLost = 2,
 }
 
-export interface ImageModel {
+export interface MediaFragmentModel {
     readonly base64: string;
-    readonly extension: 'jpeg';
-    readonly error?: ImageErrorCode;
+    readonly extension: 'jpeg' | 'webm';
+    readonly error?: MediaFragmentErrorCode;
 }
+
+export const ImageErrorCode = MediaFragmentErrorCode;
+export type ImageErrorCode = MediaFragmentErrorCode;
+export type ImageModel = MediaFragmentModel;
 
 export enum AudioErrorCode {
     drmProtected = 1,
@@ -206,6 +239,7 @@ export interface VideoDataUiModel {
     openReason?: VideoDataUiOpenReason;
     openedFromAsbplayerId?: string;
     defaultCheckboxState?: boolean;
+    onlineSubtitleSourceConfig?: OnlineSubtitleSourceConfig;
     settings: VideoDataUiSettings;
     hasSeenFtue: boolean;
     hideRememberTrackPreferenceToggle: boolean;
@@ -217,6 +251,7 @@ export interface VideoTabModel {
     src: string; // Video src
     subscribed: boolean; // Whether the video element is subscribed to extension messages
     synced: boolean; // Whether the video element has received subtitles
+    loadedSubtitles: boolean; // Whether a non-empty subtitle track is loaded
     syncedTimestamp?: number;
     faviconUrl?: string;
 }
@@ -278,11 +313,15 @@ export interface MobileOverlayModel {
     subtitleDisplaying: boolean;
     subtitlesAreVisible: boolean;
     themeType: 'dark' | 'light';
-    playMode: PlayMode;
+    playModes: PlayMode[];
 }
 
 export enum ControlType {
     timeDisplay = 0,
     subtitleOffset = 1,
     playbackRate = 2,
+}
+
+export interface BrowserFeatures {
+    sidePanel: boolean;
 }
