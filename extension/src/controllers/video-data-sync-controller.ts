@@ -382,10 +382,21 @@ export default class VideoDataSyncController {
                         await globalStateProvider.get(['onlineSubtitleSourceConfig'])
                     ).onlineSubtitleSourceConfig;
 
+                    const nextOnlineSubtitleSourceConfig = {
+                        ...currentOnlineSubtitleSourceConfig,
+                        ...setOnlineSubtitleSourceConfigMessage.state,
+                    };
+
+                    if (setOnlineSubtitleSourceConfigMessage.state.jimakuApiKey !== undefined) {
+                        const jimakuApiKey = setOnlineSubtitleSourceConfigMessage.state.jimakuApiKey.trim();
+                        nextOnlineSubtitleSourceConfig.jimakuApiKey = jimakuApiKey;
+                        nextOnlineSubtitleSourceConfig.jimakuApiKeySavedAt =
+                            jimakuApiKey.length > 0 ? Date.now() : undefined;
+                    }
+
                     await globalStateProvider.set({
                         onlineSubtitleSourceConfig: {
-                            ...currentOnlineSubtitleSourceConfig,
-                            ...setOnlineSubtitleSourceConfigMessage.state,
+                            ...nextOnlineSubtitleSourceConfig,
                         },
                     });
                     return;

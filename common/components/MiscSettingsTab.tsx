@@ -51,6 +51,7 @@ interface Props {
     extensionSupportsPauseOnHover?: boolean;
     extensionSupportsSeekableTrackSetting?: boolean;
     extensionSupportsAutoCopyableTrackSetting?: boolean;
+    extraContent?: React.ReactNode;
 }
 
 const MiscSettingTab: React.FC<Props> = ({
@@ -63,6 +64,7 @@ const MiscSettingTab: React.FC<Props> = ({
     extensionSupportsPauseOnHover,
     extensionSupportsSeekableTrackSetting,
     extensionSupportsAutoCopyableTrackSetting,
+    extraContent,
 }) => {
     const { t } = useTranslation();
     const {
@@ -444,6 +446,7 @@ const MiscSettingTab: React.FC<Props> = ({
                         {t('action.exportSettings')}
                     </Button>
                 </Stack>
+                {extraContent}
             </Stack>
             <input
                 ref={settingsFileInputRef}

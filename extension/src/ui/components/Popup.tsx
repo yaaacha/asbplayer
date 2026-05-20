@@ -33,6 +33,7 @@ import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-
 import { uiTabRegistry, useMediaId } from '../hooks/use-media-id';
 import Statistics from '@project/common/components/Statistics';
 import Box from '@mui/material/Box';
+import OnlineSubtitleSourceSettings from './OnlineSubtitleSourceSettings';
 import { createStatisticsPopup } from '@/services/statistics-util';
 import Tooltip from '@project/common/components/Tooltip';
 import { useCurrentTabId } from '../hooks/use-current-tab-id';
@@ -254,6 +255,9 @@ const Popup = ({
                             inAnnotationTutorial={inAnnotationTutorial}
                             onAnnotationTutorialSeen={handleAnnotationTutorialSeen}
                             scrollToId={scrollToId}
+                            miscSettingsExtraContent={
+                                <OnlineSubtitleSourceSettings globalStateProvider={globalStateProvider} />
+                            }
                         />
                     )}
                     {statisticsOpen && (

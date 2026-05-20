@@ -11,6 +11,7 @@ export enum AnnotationTutorialState {
 
 export interface OnlineSubtitleSourceConfig {
     jimakuApiKey: string;
+    jimakuApiKeySavedAt?: number;
 }
 
 export const initialGlobalState: GlobalState = {

@@ -204,6 +204,7 @@ interface Props {
     inAnnotationTutorial?: boolean;
     onAnnotationTutorialSeen?: () => void;
     heightConstrained?: boolean;
+    miscSettingsExtraContent?: React.ReactNode;
     testCard?: () => Promise<CardModel>;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
     onOpenChromeExtensionShortcuts: () => void;
@@ -252,6 +253,7 @@ export default function SettingsForm({
     inAnnotationTutorial,
     onAnnotationTutorialSeen,
     heightConstrained,
+    miscSettingsExtraContent,
     testCard,
     onSettingsChanged,
     onOpenChromeExtensionShortcuts,
@@ -541,6 +543,7 @@ export default function SettingsForm({
                     extensionSupportsPauseOnHover={extensionSupportsPauseOnHover}
                     extensionSupportsSeekableTrackSetting={extensionSupportsSeekableTrackSetting}
                     extensionSupportsAutoCopyableTrackSetting={extensionSupportsAutoCopyableTrackSetting}
+                    extraContent={miscSettingsExtraContent}
                 />
             </TabPanel>
             <TabPanel value={tabIndex} index={tabIndicesById['about']} tabsOrientation={tabsOrientation}>

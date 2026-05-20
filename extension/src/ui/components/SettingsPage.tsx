@@ -19,6 +19,10 @@ import { useTheme, type Theme } from '@mui/material/styles';
 import { settingsPageConfigs } from '@/services/pages';
 import { DictionaryProvider } from '@project/common/dictionary-db';
 import { useLocationHash } from '@project/common/hooks/use-location-hash';
+import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-provider';
+import OnlineSubtitleSourceSettings from './OnlineSubtitleSourceSettings';
+
+const globalStateProvider = new ExtensionGlobalStateProvider();
 
 const useStyles = makeStyles<Theme>((theme) => ({
     root: {
@@ -144,6 +148,9 @@ const SettingsPage = ({
                         onAnnotationTutorialSeen={onAnnotationTutorialSeen}
                         testCard={extensionTestCard}
                         scrollToId={scrollToId}
+                        miscSettingsExtraContent={
+                            <OnlineSubtitleSourceSettings globalStateProvider={globalStateProvider} />
+                        }
                     />
                 </DialogContent>
                 <Box style={{ marginBottom: theme.spacing(2) }} className={classes.profilesContainer}>
