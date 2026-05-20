@@ -96,7 +96,8 @@
         "zoomIn": "확대",
         "zoomOut": "축소",
         "imagePreview": "미리보기 / 수정",
-        "quickSelectFtue": "{{shortcut}}으로 마지막으로 사용한 동작을 선택/실행합니다."
+        "quickSelectFtue": "{{shortcut}}으로 마지막으로 사용한 동작을 선택/실행합니다.",
+        "appendToMatchingCard": "Append"
     },
     "bar": {
         "donate": "후원하기",
@@ -690,9 +691,9 @@
     },
     "onlineSubtitleSources": {
         "searchOnlineSubtitles": "Search online subtitles",
-        "searchTerm": "Search term",
+        "searchTerm": "Search title",
         "jimakuApiKey": "Jimaku API key",
-        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here</0>.",
+        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here.</0>",
         "entries": "Search results",
         "noEntries": "No search results",
         "availableFiles": "Files",

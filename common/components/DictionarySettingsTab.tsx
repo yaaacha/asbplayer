@@ -1607,7 +1607,9 @@ const DictionarySettingsTab: React.FC<Props> = ({
                 </FormControl>
                 {supportsDictionaryWaniKani && (
                     <>
-                        <SettingsSection>{t('settings.dictionaryWaniKaniSection')}</SettingsSection>
+                        <SettingsSection>
+                            {t('settings.dictionaryWaniKaniSection', { defaultValue: 'WaniKani' })}
+                        </SettingsSection>
                         {waniKaniUserInfo && (
                             <Typography variant="body2" color="textSecondary">
                                 {`${waniKaniUserInfo.data.username}: ${waniKaniUserInfo.data.level}/${
@@ -1617,7 +1619,7 @@ const DictionarySettingsTab: React.FC<Props> = ({
                         )}
                         <SettingsTextField
                             type="text"
-                            label={t('settings.dictionaryWaniKaniApiToken')}
+                            label={t('settings.dictionaryWaniKaniApiToken', { defaultValue: 'WaniKani API token' })}
                             value={
                                 showDictionaryWaniKaniApiToken || !selectedDictionary.dictionaryWaniKaniApiToken
                                     ? selectedDictionary.dictionaryWaniKaniApiToken
@@ -1627,7 +1629,7 @@ const DictionarySettingsTab: React.FC<Props> = ({
                             helperText={
                                 dictionaryWaniKaniError ??
                                 getHelperTextForCacheSettingsDependencies(
-                                    t('settings.dictionaryWaniKaniApiToken'),
+                                    t('settings.dictionaryWaniKaniApiToken', { defaultValue: 'WaniKani API token' }),
                                     'dictionaryWaniKaniApiToken'
                                 )
                             }

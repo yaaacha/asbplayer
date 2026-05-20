@@ -193,7 +193,13 @@ export default function OnlineSubtitleSourceDialog({
     }, [filterString, jimakuFiles]);
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullWidth
+            maxWidth="sm"
+            slotProps={{ paper: { sx: { width: 'min(560px, calc(100vw - 32px))' } } }}
+        >
             <Toolbar>
                 <Typography variant="h6" sx={{ flexGrow: 1 }} noWrap>
                     {t('onlineSubtitleSources.searchOnlineSubtitles')}
@@ -252,7 +258,7 @@ export default function OnlineSubtitleSourceDialog({
                                         rel="noopener noreferrer"
                                         underline="hover"
                                     >
-                                        here
+                                        here.
                                     </Link>,
                                 ]}
                             />

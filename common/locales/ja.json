@@ -96,7 +96,8 @@
         "zoomIn": "ズームイン",
         "zoomOut": "ズームアウト",
         "imagePreview": "プレビュー・編集",
-        "quickSelectFtue": "{{shortcut}}は最後に使用したアクションを選択/実行します。"
+        "quickSelectFtue": "{{shortcut}}は最後に使用したアクションを選択/実行します。",
+        "appendToMatchingCard": "Append"
     },
     "bar": {
         "donate": "寄付",
@@ -690,9 +691,9 @@
     },
     "onlineSubtitleSources": {
         "searchOnlineSubtitles": "ネット上の字幕ファイルを検索",
-        "searchTerm": "検索キーワード",
+        "searchTerm": "Search title",
         "jimakuApiKey": "JimakuのAPIキー",
-        "jimakuApiKeyAutosaveHint": "自動的に保存されます。APIキーは<0>こちらから</0>入手できます。",
+        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here.</0>",
         "entries": "検索結果",
         "noEntries": "検索結果はありません",
         "availableFiles": "ファイル",

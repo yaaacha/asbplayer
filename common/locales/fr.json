@@ -96,7 +96,8 @@
         "zoomIn": "Zoom avant",
         "zoomOut": "Zoom arrière",
         "imagePreview": "Prévisualiser / modifier",
-        "quickSelectFtue": "{{shortcut}} sélectionne/exécute la dernière action utilisée."
+        "quickSelectFtue": "{{shortcut}} sélectionne/exécute la dernière action utilisée.",
+        "appendToMatchingCard": "Append"
     },
     "bar": {
         "donate": "Faire un don",
@@ -690,9 +691,9 @@
     },
     "onlineSubtitleSources": {
         "searchOnlineSubtitles": "Search online subtitles",
-        "searchTerm": "Search term",
+        "searchTerm": "Search title",
         "jimakuApiKey": "Jimaku API key",
-        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here</0>.",
+        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here.</0>",
         "entries": "Search results",
         "noEntries": "No search results",
         "availableFiles": "Files",

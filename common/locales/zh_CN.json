@@ -96,7 +96,8 @@
         "zoomIn": "缩小",
         "zoomOut": "放大",
         "imagePreview": "预览与编辑",
-        "quickSelectFtue": "按 {{shortcut}} 执行最近一次操作。"
+        "quickSelectFtue": "按 {{shortcut}} 执行最近一次操作。",
+        "appendToMatchingCard": "Append"
     },
     "bar": {
         "donate": "赞助作者",
@@ -690,9 +691,9 @@
     },
     "onlineSubtitleSources": {
         "searchOnlineSubtitles": "Search online subtitles",
-        "searchTerm": "Search term",
+        "searchTerm": "Search title",
         "jimakuApiKey": "Jimaku API key",
-        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here</0>.",
+        "jimakuApiKeyAutosaveHint": "Saved automatically. Get an API key <0>here.</0>",
         "entries": "Search results",
         "noEntries": "No search results",
         "availableFiles": "Files",
