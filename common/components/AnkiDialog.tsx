@@ -698,6 +698,7 @@ const AnkiDialog = ({
 
     const updateLastButtonRef = useRef<HTMLButtonElement | null>(null);
     const openInAnkiButtonRef = useRef<HTMLButtonElement | null>(null);
+    const appendToMatchingButtonRef = useRef<HTMLButtonElement | null>(null);
     const exportButtonRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedExportModeRef = useRef<AnkiExportMode>(undefined);
     lastSelectedExportModeRef.current = lastSelectedExportMode;
@@ -710,7 +711,7 @@ const AnkiDialog = ({
             return undefined;
         }
 
-        for (const buttonRef of [exportButtonRef, openInAnkiButtonRef, updateLastButtonRef]) {
+        for (const buttonRef of [exportButtonRef, openInAnkiButtonRef, updateLastButtonRef, appendToMatchingButtonRef]) {
             if (buttonRef.current === activeElement) {
                 return buttonRef.current;
             }
@@ -774,6 +775,7 @@ const AnkiDialog = ({
 
     const handleOpenInAnki = useCallback(() => handleProceed('gui'), [handleProceed]);
     const handleUpdateLastCard = useCallback(() => handleProceed('updateLast'), [handleProceed]);
+    const handleAppendToMatchingCard = useCallback(() => handleProceed('appendToMatching'), [handleProceed]);
     const handleExport = useCallback(() => handleProceed('default'), [handleProceed]);
 
     useEffect(() => {
@@ -1073,6 +1075,15 @@ const AnkiDialog = ({
                         onClick={handleUpdateLastCard}
                     >
                         {t('ankiDialog.updateLastCard')}
+                    </AnkiDialogButton>
+                    <AnkiDialogButton
+                        ref={appendToMatchingButtonRef}
+                        disabled={disabled}
+                        focusVisible={focusedAction === 'appendToMatching'}
+                        onBlurVisible={handleActionBlur}
+                        onClick={handleAppendToMatchingCard}
+                    >
+                        {t('ankiDialog.appendToMatchingCard', { defaultValue: 'Append' })}
                     </AnkiDialogButton>
                     <AnkiDialogButton
                         ref={exportButtonRef}

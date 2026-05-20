@@ -131,7 +131,7 @@ export interface AudioModel {
     readonly error?: AudioErrorCode;
 }
 
-export type AnkiExportMode = 'gui' | 'updateLast' | 'default';
+export type AnkiExportMode = 'gui' | 'updateLast' | 'appendToMatching' | 'default';
 
 export interface AnkiDialogSettings extends AnkiSettings {
     themeType: string;

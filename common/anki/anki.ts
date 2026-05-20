@@ -475,28 +475,7 @@ export class Anki {
         mode,
         ankiConnectUrl,
     }: ExportParams) {
-        const fields = {};
-
-        this._appendField(fields, this.settingsProvider.sentenceField, text, true);
-        this._appendField(fields, this.settingsProvider.track1Field, track1, true);
-        this._appendField(fields, this.settingsProvider.track2Field, track2, true);
-        this._appendField(fields, this.settingsProvider.track3Field, track3, true);
-        this._appendField(fields, this.settingsProvider.definitionField, definition, true);
-        this._appendField(fields, this.settingsProvider.wordField, word, false);
-        this._appendField(fields, this.settingsProvider.sourceField, source, false);
-        this._appendField(fields, this.settingsProvider.urlField, url, false);
-
-        if (customFieldValues) {
-            for (const customFieldName of Object.keys(customFieldValues)) {
-                this._appendField(
-                    fields,
-                    this.settingsProvider.customAnkiFields[customFieldName],
-                    customFieldValues[customFieldName],
-                    true
-                );
-            }
-        }
-
+        const fields: { [fieldName: string]: string } = {};
         const params: any = {
             note: {
                 deckName: this.settingsProvider.deck,
@@ -512,6 +491,40 @@ export class Anki {
                 },
             },
         };
+
+        const appendToMatching = mode === 'appendToMatching';
+        const appendTarget = appendToMatching ? await this._findAppendTarget(word, ankiConnectUrl) : undefined;
+
+        if (appendTarget) {
+            this._seedFieldsForAppend(fields, appendTarget);
+        }
+
+        this._appendField(fields, this.settingsProvider.sentenceField, text, true);
+        this._appendField(fields, this.settingsProvider.track1Field, track1, true);
+        this._appendField(fields, this.settingsProvider.track2Field, track2, true);
+        this._appendField(fields, this.settingsProvider.track3Field, track3, true);
+        this._appendField(fields, this.settingsProvider.definitionField, definition, true);
+        this._appendField(fields, this.settingsProvider.wordField, word, false);
+        this._appendField(fields, this.settingsProvider.sourceField, source, false);
+        this._appendField(fields, this.settingsProvider.urlField, url, false);
+
+        if (appendTarget && this.settingsProvider.wordField) {
+            const existingWord = appendTarget.fields[this.settingsProvider.wordField];
+            if (existingWord?.value) {
+                fields[this.settingsProvider.wordField] = existingWord.value;
+            }
+        }
+
+        if (customFieldValues) {
+            for (const customFieldName of Object.keys(customFieldValues)) {
+                this._appendField(
+                    fields,
+                    this.settingsProvider.customAnkiFields[customFieldName],
+                    customFieldValues[customFieldName],
+                    true
+                );
+            }
+        }
 
         const gui = mode === 'gui';
         const updateLast = mode === 'updateLast';
@@ -532,11 +545,18 @@ export class Anki {
         ]);
 
         if (encodedAudio) {
-            await this._attachAudio(params, fields, encodedAudio, gui || updateLast, ankiConnectUrl);
+            await this._attachAudio(params, fields, encodedAudio, gui || updateLast || appendToMatching, ankiConnectUrl);
         }
 
         if (encodedImage && image) {
-            await this._attachMediaFragment(params, fields, encodedImage, image, gui || updateLast, ankiConnectUrl);
+            await this._attachMediaFragment(
+                params,
+                fields,
+                encodedImage,
+                image,
+                gui || updateLast || appendToMatching,
+                ankiConnectUrl
+            );
         }
 
         params.note['fields'] = fields;
@@ -581,10 +601,102 @@ export class Anki {
                 }
 
                 throw new Error('Could not update last card because the card info could not be fetched');
+            case 'appendToMatching':
+                if (appendTarget === undefined) {
+                    throw new Error('Could not find note to append');
+                }
+
+                params.note['id'] = appendTarget.noteId;
+                await this._executeAction('updateNoteFields', params, ankiConnectUrl);
+
+                if (tags.length > 0) {
+                    await this._executeAction(
+                        'addTags',
+                        { notes: [appendTarget.noteId], tags: tags.join(' ') },
+                        ankiConnectUrl
+                    );
+                }
+
+                if (!this.settingsProvider.wordField || !appendTarget.fields) {
+                    return appendTarget.noteId;
+                }
+
+                const appendWordField = appendTarget.fields[this.settingsProvider.wordField];
+                return appendWordField?.value ? appendWordField.value : appendTarget.noteId;
             case 'default':
                 return (await this._executeAction('addNote', params, ankiConnectUrl)).result;
             default:
                 throw new Error('Unknown export mode: ' + mode);
+        }
+    }
+
+    private async _findAppendTarget(word: string | undefined, ankiConnectUrl?: string): Promise<NoteInfo> {
+        const trimmedWord = word?.trim() ?? '';
+
+        if (!this.settingsProvider.wordField) {
+            throw new Error('Word field must be configured to append to a matching card');
+        }
+
+        if (trimmedWord.length === 0) {
+            throw new Error('Word field value is required to append to a matching card');
+        }
+
+        const noteIds = await this.findNotesWithWord(trimmedWord, ankiConnectUrl);
+        if (noteIds.length === 0) {
+            throw new Error(`Could not find any Anki note with word "${trimmedWord}"`);
+        }
+
+        const matchingNotes = (await this.notesInfo(noteIds, ankiConnectUrl)).filter(
+            (note) => note.modelName === this.settingsProvider.noteType
+        );
+        if (matchingNotes.length === 0) {
+            throw new Error(`Could not find any matching Anki note in note type "${this.settingsProvider.noteType}"`);
+        }
+
+        if (!this.settingsProvider.deck) {
+            return [...matchingNotes].sort((a, b) => a.noteId - b.noteId)[matchingNotes.length - 1];
+        }
+
+        const cards = await this.cardsInfo(
+            matchingNotes.flatMap((note) => note.cards),
+            undefined,
+            ankiConnectUrl
+        );
+        const notesInDeck = new Set(
+            cards.filter((card) => card.deckName === this.settingsProvider.deck).map((card) => card.note)
+        );
+        const matchingNotesInDeck = matchingNotes.filter((note) => notesInDeck.has(note.noteId));
+
+        if (matchingNotesInDeck.length === 0) {
+            throw new Error(`Could not find any matching Anki note in deck "${this.settingsProvider.deck}"`);
+        }
+
+        return [...matchingNotesInDeck].sort((a, b) => a.noteId - b.noteId)[matchingNotesInDeck.length - 1];
+    }
+
+    private _seedFieldsForAppend(fields: any, note: NoteInfo) {
+        const fieldNames = [
+            this.settingsProvider.sentenceField,
+            this.settingsProvider.track1Field,
+            this.settingsProvider.track2Field,
+            this.settingsProvider.track3Field,
+            this.settingsProvider.definitionField,
+            this.settingsProvider.audioField,
+            this.settingsProvider.imageField,
+            this.settingsProvider.sourceField,
+            this.settingsProvider.urlField,
+            ...Object.values(this.settingsProvider.customAnkiFields),
+        ];
+
+        for (const fieldName of fieldNames) {
+            if (!fieldName) {
+                continue;
+            }
+
+            const field = note.fields[fieldName];
+            if (field?.value) {
+                fields[fieldName] = field.value;
+            }
         }
     }
 
