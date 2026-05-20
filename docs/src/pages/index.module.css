@@ -58,7 +58,7 @@
 .appLink {
     display: flex;
     flex-wrap: nowrap;
-    height: 2.5rem;
+    height: 3rem;
     align-items: center;
     font-size: 1em;
     gap: 0.5rem;
@@ -82,7 +82,7 @@
 }
 
 .textSelectable {
-    background: #44f;
+    background: #77f;
 }
 
 .video {
@@ -110,9 +110,5 @@
 
     .linksSection {
         font-size: 0.9em;
-    }
-
-    .storeButtons img {
-        height: 32px;
     }
 }
